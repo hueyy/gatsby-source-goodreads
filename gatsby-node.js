@@ -1,111 +1,114 @@
-const axios = require(`axios`)
 const crypto = require(`crypto`)
-const parseString = require('xml2js').parseString
+const { default: Goodreads } = require(`node-goodreads`)
 
-exports.sourceNodes = async ({
-  boundActionCreators,
-  reporter
-},
+exports.sourceNodes = async (
   {
-    goodReadsUserId,
-    userShelf = '',
-    developerKey = ''
+    boundActionCreators,
+    reporter
+  },
+  {
+    userId,
+    shelf = `currently-reading`,
+    apiKey,
+    apiSecret,
+    oauthToken,
+    oauthSecret,
   }) => {
   const { createNode } = boundActionCreators
+  const gr = Goodreads({ key: apiKey, secret: apiSecret })
 
-  activity = reporter.activityTimer(`fetching goodreads shelf`);
-  activity.start();
+  activity = reporter.activityTimer(`fetching goodreads shelf`)
+  activity.start()
 
-  for (var index = 0; index < 999999; index++) {
-    const options = {
-      method: `get`,
-      url: `https://www.goodreads.com/review/list`,
-      params: {
-        id: goodReadsUserId,
-        shelf: userShelf,
-        v: `2`,
-        key: developerKey,
-        per_page: 200,
-        page: index + 1
-      }
-    }
-    const shelfListXml = await axios(options)
-
-    if (shelfListXml.status !== 200) {
-      if (index > 0) {
-        reporter.panic(`gatsby-source-goodreads: Failed API call -  ${shelfListXml}`)
-      }
-      index = 999999
-    }
-    else {
-      var shelfReviewId = `reviewList-` + goodReadsUserId
-
-      parseString(shelfListXml.data, function (err, result) {
-        if (err) {
-          reporter.panic(`gatsby-source-goodreads: Failed to parse API call -  ${err}`)
-        } else {
-          if (Object.keys(result['GoodreadsResponse']['reviews'][0]['review'] || {}).length === 0) {
-            index = 999999
-            return
-          }
-          const reviewListings = result['GoodreadsResponse']['reviews'][0]['review'].map(element => {
-            var bookElement = element['book'][0]
-
-            var isbnValue = bookElement['isbn'][0]
-            var isbn13Value = bookElement['isbn13'][0]
-            if (isNaN(isbnValue)) {
-              isbnValue = null
-            }
-            if (isNaN(isbn13Value)) {
-              isbn13Value = null
-            }
-
-            return {
-              reviewID: element['id'][0],
-              rating: element['rating'][0],
-              votes: element['votes'][0],
-              spoilerFlag: element['spoiler_flag'][0],
-              spoilersState: element['spoilers_state'][0],
-              dateAdded: element['date_added'][0],
-              dateUpdated: element['spoilers_state'][0],
-              body: element['body'][0],
-              book: {
-                bookID: bookElement['id'][0]._,
-                isbn: isbnValue,
-                isbn13: isbn13Value,
-                textReviewsCount: bookElement['text_reviews_count'][0]._,
-                uri: bookElement['uri'][0],
-                link: bookElement['link'][0],
-                title: bookElement['title'][0],
-                titleWithoutSeries: bookElement['title_without_series'][0],
-                imageUrl: bookElement['image_url'][0],
-                smallImageUrl: bookElement['small_image_url'][0],
-                largeImageUrl: bookElement['large_image_url'][0],
-                description: bookElement['description'][0]
-              }
-            }
-          })
-
-          createNode({
-            shelfName: userShelf,
-            reviews: reviewListings,
-
-            id: shelfReviewId,
-            parent: null,
-            children: [],
-            internal: {
-              type: `GoodreadsShelf`,
-              contentDigest: crypto
-                .createHash(`md5`)
-                .update('shelf' + goodReadsUserId)
-                .digest(`hex`)
-            }
-          })
-        }
-      })
-    }
+  if (!oauthToken || !oauthSecret) {
+    const { oauthToken, oauthSecret, url } = await gr.authoriseUser()
+    console.log(
+      `oauthToken: ${oauthToken}\n`,
+      `oauthSecret: ${oauthSecret}\n`,
+      `Please navigate to ${url} and allow this application to access your Goodreads account, `
+      + `then provide the oauthToken and oauthSecret to the plugin as options`
+    )
+    reporter.panic(`gatsby-source-goodreads: Missing oauthToken and/or oauthSecret`)
   }
-  activity.end()
 
+  gr.configureOauth(oauthToken, oauthSecret)
+
+  let reviews = []
+  try {
+    reviews = (await gr.reviewsList(userId, shelf)).reviews.review
+  } catch (error) {
+    reporter.panic(`gatsby-source-goodreads: Failed API call -  ${JSON.stringify(error)}`)
+  }
+
+  reviews = reviews.map(({
+    id: [reviewID],
+    rating: [rating],
+    votes: [votes],
+    spoiler_flag: [spoilerFlag],
+    spoilers_state: [spoilersState],
+    date_added: [dateAdded],
+    date_updated: [dateUpdated],
+    started_at: [startedAt],
+    read_at: [readAt],
+    body: [body],
+    url: [url],
+    book: [{
+      id: [{ _: bookID }],
+      isbn: [isbn],
+      isbn13: [isbn13],
+      text_reviews_count: [{ _: textReviewsCount }],
+      uri: [uri],
+      link: [link],
+      title: [title],
+      title_without_series: [titleWithoutSeries],
+      image_url: [imageUrl],
+      small_image_url: [smallImageUrl],
+      large_image_url: [largeImageUrl],
+      description: [description]
+    }],
+
+  }) => ({
+    reviewID,
+    rating,
+    votes,
+    spoilerFlag,
+    spoilersState,
+    dateAdded,
+    dateUpdated,
+    body,
+    readAt,
+    startedAt,
+    url,
+    book: {
+      bookID,
+      isbn: Number.isNaN(Number.parseInt(isbn)) ? `` : isbn,
+      isbn13: Number.isNaN(Number.parseInt(isbn13)) ? `` : isbn13,
+      textReviewsCount,
+      uri,
+      link,
+      title,
+      titleWithoutSeries,
+      imageUrl,
+      smallImageUrl,
+      largeImageUrl,
+      description
+    }
+  }))
+
+  createNode({
+    shelfName: shelf,
+    reviews,
+    id: `reviewList-${userId}`,
+    parent: null,
+    children: [],
+    internal: {
+      type: `GoodreadsShelf`,
+      contentDigest: crypto
+        .createHash(`md5`)
+        .update(`shelf-${userId}`)
+        .digest(`hex`)
+    }
+  })
+  activity.end()
   return
 }
