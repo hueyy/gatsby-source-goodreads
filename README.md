@@ -1,6 +1,8 @@
 # gatsby-source-goodreads
 
-Source plugin for pulling your read books into Gatsby from Goodreads API.
+[Forked from DanielOliver/gatsby-source-goodreads](https://github.com/DanielOliver/gatsby-source-goodreads)
+
+Source plugin for pulling your read books into Gatsby from Goodreads API. Supports private Goodreads profiles.
 
 ## How to use
 ```javascript
@@ -10,9 +12,12 @@ module.exports = {
     {
       resolve: "gatsby-source-goodreads",
       options: {
-        developerKey: "IAmDeveloperKey",
-        goodReadsUserId: "IAmGoodreadsUserId",
-        userShelf: "to-read" //optional
+        apiKey: "",
+        apiSecret: "",
+        oauthToken: "",
+        oauthSecret: "",
+        userId: "",
+        shelf: "to-read" // optional, defaults to currently-reading
       }
     }
   ],
@@ -21,13 +26,16 @@ module.exports = {
 
 ## Plugin options
 
-* **developerKey**: Use your [Goodreads developer API key](https://www.goodreads.com/api/keys)
-* **goodReadsUserId**: The Goodreads user ID of the user to get data for.
-* **userShelf**: _OPTIONAL_. read, currently-reading, to-read, etc.
+Get your `apiKey` and `apiSecret` from [Goodreads](https://www.goodreads.com/api/keys).
+
+Your `userId` is the string of numbers in the URL of your profile page. For instance, if you're Jeffrey Keeten and your Goodreads profile page is [https://www.goodreads.com/user/show/3427339-jeffrey-keeten](https://www.goodreads.com/user/show/3427339-jeffrey-keeten), then your `userId` is `3427339`.
+
+
+Leave `oauthToken` and `oauthSecret` blank and run `gatsby develop`. An `oauthToken` and `oauthSecret` will be printed to the console, together with an authorisation URL. Open that in your web browser, and allow your Goodreads app access to your account. Then, copy the `oauthToken` and `oauthSecret` into the plugin options, and run `gatsby develop` again.
 
 ## How to query your Goodread data using GraphQL
 
-Below is a sample query for fetching the shelf's books. 
+Below is a sample query for fetching the shelf's books.
 
 ```graphql
 query goodRead {
@@ -39,8 +47,11 @@ query goodRead {
       rating
       votes
       spoilerFlag
+      spolersState
       dateAdded
       dateUpdated
+      readAt
+      startedAt
       body
       book {
         bookID
