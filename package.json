@@ -1,6 +1,6 @@
 {
   "name": "@hueyy/gatsby-source-goodreads",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "description": "Get your shelved books in Goodreads for use in Gatsby.",
   "repository": {
     "type": "git",

@@ -101,14 +101,14 @@ exports.sourceNodes = async (
     createNode({
       shelfName: shelf,
       reviews,
-      id: `reviewList-${userId}`,
+      id: `reviewList-${userId}-${shelf}`,
       parent: null,
       children: [],
       internal: {
         type: `GoodreadsShelf`,
         contentDigest: crypto
           .createHash(`md5`)
-          .update(`shelf-${userId}`)
+          .update(`shelf-${userId}-${shelf}`)
           .digest(`hex`)
       }
     })
