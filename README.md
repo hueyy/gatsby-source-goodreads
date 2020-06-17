@@ -2,7 +2,10 @@
 
 [Forked from DanielOliver/gatsby-source-goodreads](https://github.com/DanielOliver/gatsby-source-goodreads)
 
-Source plugin for pulling your read books into Gatsby from Goodreads API. Supports private Goodreads profiles.
+Source plugin for pulling your shelved books into Gatsby from Goodreads API.
+
+* Supports private Goodreads profiles.
+* Supports fetching multiple shelves
 
 ```bash
 npm i @hueyy/gatsby-source-goodreads
@@ -22,7 +25,7 @@ module.exports = {
         oauthToken: "",
         oauthSecret: "",
         userId: "",
-        shelf: "to-read" // optional, defaults to currently-reading
+        shelf: ["to-read", "currently-reading"] // optional, defaults to currently-reading
       }
     }
   ],
