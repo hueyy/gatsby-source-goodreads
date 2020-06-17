@@ -43,6 +43,8 @@ exports.sourceNodes = async (
       reporter.panic(`gatsby-source-goodreads: Failed API call -  ${JSON.stringify(error)}`)
     }
 
+    // console.log(JSON.stringify(reviews[0].book[0].authors, null, 2))
+
     reviews = reviews.map(({
       id: [reviewID],
       rating: [rating],
@@ -67,7 +69,8 @@ exports.sourceNodes = async (
         image_url: [imageUrl],
         small_image_url: [smallImageUrl],
         large_image_url: [largeImageUrl],
-        description: [description]
+        description: [description],
+        authors
       }],
 
     }) => ({
@@ -94,7 +97,21 @@ exports.sourceNodes = async (
         imageUrl,
         smallImageUrl,
         largeImageUrl,
-        description
+        description,
+        authors: authors.map(({
+          author:
+          [{
+            id: [id],
+            name: [name],
+            role: [role],
+            small_image_url: [{ _: authorSmallImageUrl }]
+          }]
+        }) => ({
+          name,
+          id,
+          role,
+          smallImageUrl: authorSmallImageUrl.trim()
+        }))
       }
     }))
 
