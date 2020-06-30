@@ -1,4 +1,6 @@
 # gatsby-source-goodreads
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fhueyy%2Fgatsby-source-goodreads.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fhueyy%2Fgatsby-source-goodreads?ref=badge_shield)
+
 
 [Forked from DanielOliver/gatsby-source-goodreads](https://github.com/DanielOliver/gatsby-source-goodreads)
 
@@ -78,3 +80,7 @@ query goodRead {
   }
 }
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fhueyy%2Fgatsby-source-goodreads.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fhueyy%2Fgatsby-source-goodreads?ref=badge_large)
